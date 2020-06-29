@@ -1,6 +1,7 @@
 package com.todoapp.app.entity;
 
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -17,6 +18,7 @@ public class User {
     private String name;
 
     @Email(message = "Email should be valid")
+    @Column(unique=true)
     private String email;
 
     @NotBlank(message = "Password can not be empty")
