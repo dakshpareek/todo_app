@@ -8,6 +8,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+/*
+GET /users
+GET /users/id
+DELETE /users/id
+PATCH /users/id
+POST /users
+
+*/
+
 @RestController
 public class UserResource {
 
@@ -26,6 +35,7 @@ public class UserResource {
     public Optional<User> getUser(@PathVariable int id)
     {
         Optional<User> user = userRepository.findById(id);
+        //System.out.println(user);
         return user;
     }
 
@@ -33,6 +43,18 @@ public class UserResource {
     public void createUser(@RequestBody User user)
     {
         User savedUser = userRepository.save(user);
+    }
+
+    @PutMapping("/users/{id}")
+    public void updateUser(@RequestBody User user,@PathVariable int id)
+    {
+        userRepository.save(user);
+    }
+
+    @DeleteMapping("/users/{id}")
+    public void deleteUser(@PathVariable int id)
+    {
+        userRepository.deleteById(id);
     }
 
 }
