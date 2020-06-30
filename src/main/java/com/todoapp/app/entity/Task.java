@@ -1,7 +1,10 @@
 package com.todoapp.app.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import java.util.Date;
 
 @Entity
 public class Task {
@@ -10,16 +13,16 @@ public class Task {
     @GeneratedValue
     private int tid;
 
-    @ManyToOne
-    @JoinColumn()
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JsonIgnore
     private User user;
 
     @NotBlank( message = "Task name is necessary" )
     private String task_name;
 
-    private long task_creation_date;
+    private Date task_creation_date;
 
-    private long deadline;
+    private Date deadline;
 
     private String task_description;
 
@@ -29,38 +32,14 @@ public class Task {
 
     }
 
-    public Task(User user, @NotBlank(message = "Task name is necessary") String task_name) {
-        this.task_creation_date = System.currentTimeMillis();
-        this.user = user;
-        this.task_name = task_name;
-        this.task_status = "Pending";
-    }
-
-    public Task(User user, @NotBlank(message = "Task name is necessary") String task_name, long deadline) {
-        this.task_creation_date = System.currentTimeMillis();
-        this.user = user;
-        this.task_name = task_name;
-        this.deadline = deadline;
-        this.task_status = "Pending";
-    }
-
-    public Task(User user, @NotBlank(message = "Task name is necessary") String task_name, String task_description) {
-        this.task_creation_date = System.currentTimeMillis();
-        this.user = user;
-        this.task_name = task_name;
-        this.task_description = task_description;
-        this.task_status = "Pending";
-    }
-
-    public Task(User user, @NotBlank(message = "Task name is necessary") String task_name, long deadline, String task_description) {
-        this.task_creation_date = System.currentTimeMillis();
+    public Task(User user, @NotBlank(message = "Task name is necessary") String task_name, Date deadline, String task_description, String task_status) {
+        this.task_creation_date = new Date();
         this.user = user;
         this.task_name = task_name;
         this.deadline = deadline;
         this.task_description = task_description;
-        this.task_status = "Pending";
+        this.task_status = task_status;
     }
-
 
     public int getTid() {
         return tid;
@@ -86,19 +65,19 @@ public class Task {
         this.task_name = task_name;
     }
 
-    public long getTask_creation_date() {
+    public Date getTask_creation_date() {
         return task_creation_date;
     }
 
-    public void setTask_creation_date(long task_creation_date) {
+    public void setTask_creation_date(Date task_creation_date) {
         this.task_creation_date = task_creation_date;
     }
 
-    public long getDeadline() {
+    public Date getDeadline() {
         return deadline;
     }
 
-    public void setDeadline(long deadline) {
+    public void setDeadline(Date deadline) {
         this.deadline = deadline;
     }
 
@@ -117,6 +96,8 @@ public class Task {
     public void setTask_status(String task_status) {
         this.task_status = task_status;
     }
+
+
 
     @Override
     public String toString(){

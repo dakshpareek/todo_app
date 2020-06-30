@@ -1,11 +1,9 @@
 package com.todoapp.app.entity;
 
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import javax.validation.constraints.*;
+import java.util.List;
 
 @Entity
 public class User {
@@ -27,6 +25,10 @@ public class User {
 
     @Size(min = 10, max = 10, message = "Phone must contain 10 digits")
     private String phone;
+
+    @OneToMany(mappedBy="user")
+    private List<Task> tasks;
+
 
 
     public User()
@@ -80,6 +82,14 @@ public class User {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public List<Task> getTasks() {
+        return tasks;
+    }
+
+    public void setTasks(List<Task> tasks) {
+        this.tasks = tasks;
     }
 
     @Override
