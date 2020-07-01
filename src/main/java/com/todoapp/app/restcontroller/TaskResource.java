@@ -7,9 +7,12 @@ import com.todoapp.app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.transaction.Transactional;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+@Transactional
 @RestController
 public class TaskResource {
 
@@ -54,24 +57,39 @@ public class TaskResource {
         }
     }
 
-    /*
-    @DeleteMapping( "/users/{user_id}/task/{task_id}" )
-    public void delete_pending_task( @PathVariable int user_id , @PathVariable int task_id ){
-        task_repository.deleteById( task_id );
+    @DeleteMapping( "/users/{user_id}/tasks/{task_id}" )
+    public void delete_task( @PathVariable int user_id , @PathVariable int task_id ){
+        Optional<User> userOptional = userRepository.findById( user_id );
+        User user = userOptional.get();
+        task_repository.deleteByTidAndUser( task_id , user );
     }
 
-    @GetMapping( "/users/{user_id}/completed_tasks" )
-    public Optional<List<Task>> get_completed_tasks(@PathVariable int id ){
 
-        return task_repository.findByTidAndTask_status( id , "Completed" );
+    @PutMapping( "/users/{user_id}/tasks/{task_id}" )
+    public void update_task( @PathVariable int user_id , @PathVariable int task_id , @RequestBody Task task ){
+
+        Task old_details = getTasks( user_id , task_id );
+        task.setTid( old_details.getTid() );
+        task.setUser( old_details.getUser() );
+        task.setTask_creation_date( old_details.getTask_creation_date() );
+        task.setTask_status( old_details.getTask_status() );
+
+        if( task.getDeadline() == null ){
+
+            task.setDeadline( old_details.getDeadline() );
+        }
+
+        if( task.getTask_description() == null ){
+
+            task.setTask_description( old_details.getTask_description() );
+        }
+
+        if( task.getTask_name() == null ){
+
+            task.setTask_name( old_details.getTask_name() );
+        }
+
+        task_repository.save( task );
     }
-
-    @PutMapping( "/users/{user_id}/tasks/{task_id}/{current_status}" )
-    public void change_task_status(@PathVariable int id , @PathVariable int task_id , @PathVariable String current_status ){
-
-
-    }
-    */
-
 
 }
