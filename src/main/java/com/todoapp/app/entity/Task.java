@@ -26,19 +26,19 @@ public class Task {
 
     private String task_description;
 
-    private String task_status;
+    private boolean task_status;
 
     public Task(){
 
     }
 
-    public Task(User user, @NotBlank(message = "Task name is necessary") String task_name, Date deadline, String task_description, String task_status) {
+    public Task(User user, @NotBlank(message = "Task name is necessary") String task_name, Date deadline, String task_description) {
         this.task_creation_date = new Date();
         this.user = user;
         this.task_name = task_name;
         this.deadline = deadline;
         this.task_description = task_description;
-        this.task_status = task_status;
+        this.task_status = false;
     }
 
     public int getTid() {
@@ -89,11 +89,11 @@ public class Task {
         this.task_description = task_description;
     }
 
-    public String getTask_status() {
+    public boolean getTask_status() {
         return task_status;
     }
 
-    public void setTask_status(String task_status) {
+    public void setTask_status(boolean task_status) {
         this.task_status = task_status;
     }
 
