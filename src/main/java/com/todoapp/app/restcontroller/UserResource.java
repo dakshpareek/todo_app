@@ -1,5 +1,6 @@
 package com.todoapp.app.restcontroller;
 
+import com.todoapp.app.custom_exceptions.UserExceptions.UserNotFoundException;
 import com.todoapp.app.entity.User;
 import com.todoapp.app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,28 +33,50 @@ public class UserResource {
     }
 
     @GetMapping("/users/{id}")
-    public Optional<User> getUser(@PathVariable int id)
+    public User getUser(@PathVariable int id)
     {
-        Optional<User> user = userRepository.findById(id);
-        //System.out.println(user);
+        Optional<User> userOptional = userRepository.findById(id);
+
+        if(!userOptional.isPresent()){
+
+            ///////////////////////////////////////////////////////////////////////////////
+            throw new UserNotFoundException();
+        }
+
+        User user = userOptional.get();
         return user;
     }
 
     @PostMapping("/users")
-    public void createUser(@RequestBody User user)
-    {
+    public void createUser(@RequestBody User user) {
+
+        //////*****************************************************************************
         User savedUser = userRepository.save(user);
     }
 
     @PutMapping("/users/{id}")
     public void updateUser(@RequestBody User user,@PathVariable int id)
     {
+        Optional<User> userOptional = userRepository.findById(id);
+
+        if(!userOptional.isPresent()){
+
+            ///////////////////////////////////////////////////////////////////////////////
+            throw new UserNotFoundException();
+        }
         userRepository.save(user);
     }
 
     @DeleteMapping("/users/{id}")
     public void deleteUser(@PathVariable int id)
     {
+        Optional<User> userOptional = userRepository.findById(id);
+
+        if(!userOptional.isPresent()){
+
+            ///////////////////////////////////////////////////////////////////////////////
+            throw new UserNotFoundException();
+        }
         userRepository.deleteById(id);
     }
 

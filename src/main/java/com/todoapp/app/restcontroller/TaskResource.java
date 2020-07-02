@@ -1,5 +1,7 @@
 package com.todoapp.app.restcontroller;
 
+import com.todoapp.app.custom_exceptions.TaskExceptions.TaskNotFoundException;
+import com.todoapp.app.custom_exceptions.UserExceptions.UserNotFoundException;
 import com.todoapp.app.entity.Task;
 import com.todoapp.app.entity.User;
 import com.todoapp.app.repository.Task_Repository;
@@ -16,7 +18,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+
 import java.util.ArrayList;
+import javax.swing.text.html.Option;
+import javax.transaction.Transactional;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,6 +48,12 @@ public class TaskResource extends RepresentationModel {
                                   @RequestParam(name="completed",defaultValue = "-1") int isCompleted)
     {
         Optional<User> userOptional = userRepository.findById(id);
+        if(!userOptional.isPresent()){
+
+            ///////////////////////////////////////////////////////////////////////////////
+            throw new UserNotFoundException();
+        }
+
         User user = userOptional.get();
 
         //Resources <user > resources = new Resources < > (collection);
@@ -86,6 +98,7 @@ public class TaskResource extends RepresentationModel {
         collectionModel.add(prevPage);
 
         return collectionModel;
+
     }
 
 
@@ -94,6 +107,12 @@ public class TaskResource extends RepresentationModel {
     public EntityModel<Task> getTasks(@PathVariable int id, @PathVariable int tid)
     {
         Optional<User> userOptional = userRepository.findById(id);
+
+        if(!userOptional.isPresent()){
+
+            ///////////////////////////////////////////////////////////////////////////////
+            throw new UserNotFoundException();
+        }
         User user = userOptional.get();
         //ask_repository.
         Task task = task_repository.findByTidAndUser(tid, user);
@@ -123,6 +142,11 @@ public class TaskResource extends RepresentationModel {
         if (userOptional.isPresent())
         {
             Task task = task_repository.findByTidAndUser(tid, user);
+
+            if( task == null ){
+
+                throw new TaskNotFoundException();
+            }
             task.setTaskStatus(partialUpdate.getTaskStatus());
             task_repository.save(task);
         }
@@ -132,19 +156,35 @@ public class TaskResource extends RepresentationModel {
     @PostMapping( "/users/{id}/tasks" )
     public void add_task(@PathVariable int id , @RequestBody Task task ){
         Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isPresent())
-        {
-            User user = userOptional.get();
-            task.setUser(user);
-            task_repository.save(task);
+        if (!userOptional.isPresent()) {
+            /////////////////////////////////////////////////////////////////////////////////
+            throw new UserNotFoundException();
         }
+
+        User user = userOptional.get();
+        task.setUser(user);
+        task_repository.save(task);
     }
 
 
     @DeleteMapping( "/users/{user_id}/tasks/{task_id}" )
     public void delete_task( @PathVariable int user_id , @PathVariable int task_id ){
         Optional<User> userOptional = userRepository.findById( user_id );
+
+        if (!userOptional.isPresent()) {
+            /////////////////////////////////////////////////////////////////////////////////
+            throw new UserNotFoundException();
+        }
+
+        Optional< Task > taskOptional = task_repository.findById( task_id );
+
+        if(!taskOptional.isPresent()){
+
+            throw new TaskNotFoundException();
+        }
         User user = userOptional.get();
+
+
         task_repository.deleteByTidAndUser( task_id , user );
     }
 
