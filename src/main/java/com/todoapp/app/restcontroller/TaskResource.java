@@ -15,6 +15,7 @@ import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +23,9 @@ import java.util.Optional;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import javax.transaction.Transactional;
 
+@Transactional
 @RestController
 public class TaskResource extends RepresentationModel {
 
@@ -52,10 +55,6 @@ public class TaskResource extends RepresentationModel {
         if(isCompleted == -1) {
             taskList = task_repository.findAllByUser(user, firstPage);
         }
-        qq
-                q
-                ;
-
         //show pending tasks only of a user
         else if (isCompleted == 0) {
             taskList = task_repository.findAllByUserAndTaskStatus(user, false, firstPage);
@@ -97,8 +96,8 @@ public class TaskResource extends RepresentationModel {
         Optional<User> userOptional = userRepository.findById(id);
         User user = userOptional.get();
         //ask_repository.
-        //Task task = task_repository.findByTidAndUser(tid, user);
-        Task task = task_repository.findByTidAndUser_Uid(tid, id);
+        Task task = task_repository.findByTidAndUser(tid, user);
+        //Task task = task_repository.findByTidAndUser_Uid(tid, id);
         EntityModel<Task> taskEntityModel = EntityModel.of(task);
 
         Link link = linkTo(methodOn(TaskResource.class).getTasks(id,tid)).withSelfRel();
@@ -124,7 +123,6 @@ public class TaskResource extends RepresentationModel {
         if (userOptional.isPresent())
         {
             Task task = task_repository.findByTidAndUser(tid, user);
-            //Task task = task_repository.findByTidAndUser_Uid(tid, id);
             task.setTaskStatus(partialUpdate.getTaskStatus());
             task_repository.save(task);
         }
@@ -142,5 +140,43 @@ public class TaskResource extends RepresentationModel {
         }
     }
 
+
+    @DeleteMapping( "/users/{user_id}/tasks/{task_id}" )
+    public void delete_task( @PathVariable int user_id , @PathVariable int task_id ){
+        Optional<User> userOptional = userRepository.findById( user_id );
+        User user = userOptional.get();
+        task_repository.deleteByTidAndUser( task_id , user );
+    }
+
+
+    @PutMapping( "/users/{user_id}/tasks/{task_id}" )
+    public void update_task( @PathVariable int user_id , @PathVariable int task_id , @RequestBody Task task ){
+
+        Optional<User> userOptional = userRepository.findById( user_id );
+        User user = userOptional.get();
+
+        //Task old_details = getTasks( user_id , task_id );
+        Task old_details = task_repository.findByTidAndUser(task_id,user);
+        task.setTid( old_details.getTid() );
+        task.setUser( old_details.getUser() );
+        task.setTask_creation_date( old_details.getTask_creation_date() );
+        task.setTaskStatus(old_details.getTaskStatus());
+
+        if( task.getDeadline() == null ){
+            task.setDeadline( old_details.getDeadline() );
+        }
+
+        if( task.getTask_description() == null ){
+
+            task.setTask_description( old_details.getTask_description() );
+        }
+
+        if( task.getTask_name() == null ){
+
+            task.setTask_name( old_details.getTask_name() );
+        }
+
+        task_repository.save( task );
+    }
 
 }

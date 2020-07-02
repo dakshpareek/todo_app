@@ -26,12 +26,12 @@ public class Task {
 
     private String task_description;
 
-
     private boolean taskStatus = false;
 
     public Task(){
 
     }
+
 
     public Task(User user, @NotBlank(message = "Task name is necessary") String task_name, Date deadline, String task_description,boolean taskStatus) {
         this.task_creation_date = new Date();
@@ -88,6 +88,7 @@ public class Task {
     public void setTask_description(String task_description) {
         this.task_description = task_description;
     }
+
 
     public boolean getTaskStatus() {
         return taskStatus;
