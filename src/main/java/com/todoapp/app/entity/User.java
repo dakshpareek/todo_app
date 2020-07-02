@@ -1,6 +1,8 @@
 package com.todoapp.app.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import javax.validation.constraints.*;
 import java.util.List;
@@ -27,6 +29,7 @@ public class User {
     private String phone;
 
     @OneToMany(mappedBy="user")
+    @JsonIgnore
     private List<Task> tasks;
 
 
