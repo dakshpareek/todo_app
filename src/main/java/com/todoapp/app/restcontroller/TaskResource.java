@@ -2,6 +2,7 @@ package com.todoapp.app.restcontroller;
 
 import com.todoapp.app.entity.Task;
 import com.todoapp.app.entity.User;
+import com.todoapp.app.exceptions.NotFoundException;
 import com.todoapp.app.repository.Task_Repository;
 import com.todoapp.app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +13,9 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.RepresentationModel;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 
 import java.util.ArrayList;
@@ -42,6 +44,12 @@ public class TaskResource extends RepresentationModel {
                                   @RequestParam(name="completed",defaultValue = "-1") int isCompleted)
     {
         Optional<User> userOptional = userRepository.findById(id);
+
+        if (userOptional.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+        }
+
         User user = userOptional.get();
 
         //Resources <user > resources = new Resources < > (collection);
@@ -94,6 +102,10 @@ public class TaskResource extends RepresentationModel {
     public EntityModel<Task> getTasks(@PathVariable int id, @PathVariable int tid)
     {
         Optional<User> userOptional = userRepository.findById(id);
+        if (userOptional.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+        }
         User user = userOptional.get();
         //ask_repository.
         Task task = task_repository.findByTidAndUser(tid, user);
@@ -117,33 +129,50 @@ public class TaskResource extends RepresentationModel {
     @PatchMapping( "/users/{id}/tasks/{tid}")
     public void updateTaskStatus(@PathVariable int id,@PathVariable int tid,@RequestBody Task partialUpdate)
     {
-        Optional<User> userOptional = userRepository.findById(id);
-        User user = userOptional.get();
 
-        if (userOptional.isPresent())
-        {
+            Optional<User> userOptional = userRepository.findById(id);
+            if (userOptional.isEmpty())
+            {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+            }
+
+            User user = userOptional.get();
+
             Task task = task_repository.findByTidAndUser(tid, user);
+
+            if(task == null)
+            {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task Not Found");
+            }
+            //System.out.println("Task is "+task);
+
             task.setTaskStatus(partialUpdate.getTaskStatus());
             task_repository.save(task);
-        }
+
+
     }
 
 
     @PostMapping( "/users/{id}/tasks" )
     public void add_task(@PathVariable int id , @RequestBody Task task ){
         Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isPresent())
+        if (userOptional.isEmpty())
         {
-            User user = userOptional.get();
-            task.setUser(user);
-            task_repository.save(task);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
         }
+        User user = userOptional.get();
+        task.setUser(user);
+        task_repository.save(task);
     }
 
 
     @DeleteMapping( "/users/{user_id}/tasks/{task_id}" )
     public void delete_task( @PathVariable int user_id , @PathVariable int task_id ){
         Optional<User> userOptional = userRepository.findById( user_id );
+        if (userOptional.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+        }
         User user = userOptional.get();
         task_repository.deleteByTidAndUser( task_id , user );
     }
@@ -153,6 +182,10 @@ public class TaskResource extends RepresentationModel {
     public void update_task( @PathVariable int user_id , @PathVariable int task_id , @RequestBody Task task ){
 
         Optional<User> userOptional = userRepository.findById( user_id );
+        if (userOptional.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+        }
         User user = userOptional.get();
 
         //Task old_details = getTasks( user_id , task_id );
