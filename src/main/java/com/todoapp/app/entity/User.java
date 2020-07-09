@@ -15,6 +15,7 @@ public class User {
     private int uid;
 
     @NotBlank(message = "Name can not be empty")
+    @Pattern(regexp="^[A-Za-z]*$",message = "Name should contain only alphabets")
     private String name;
 
     @Email(message = "Email should be valid")

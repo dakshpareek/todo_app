@@ -1,5 +1,6 @@
 package com.todoapp.app.restcontroller;
 
+import com.todoapp.app.custom_exceptions.InvalidPageNumberException;
 import com.todoapp.app.custom_exceptions.NotFoundException;
 import com.todoapp.app.entity.Task;
 import com.todoapp.app.entity.User;
@@ -51,6 +52,11 @@ public class TaskResource extends RepresentationModel {
             throw new NotFoundException(  "User Not Found" , HttpStatus.NOT_FOUND.value() );
         }
 
+        if( page_number < 0 ){
+
+            throw new InvalidPageNumberException( "Page number cannot be negative" );
+        }
+
         User user = userOptional.get();
 
         //Resources <user > resources = new Resources < > (collection);
@@ -96,6 +102,10 @@ public class TaskResource extends RepresentationModel {
 
             Link nextPage = linkTo(methodOn(TaskResource.class).getAllTasks(id, page_number + 1, isCompleted)).withRel("Next Page");
             collectionModel.add(nextPage);
+        }
+        else{
+
+            throw new InvalidPageNumberException( "Invalid Page number" );
         }
 
         if( page_number > 0 ) {
