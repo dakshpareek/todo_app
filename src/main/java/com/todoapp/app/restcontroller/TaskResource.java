@@ -1,12 +1,14 @@
 package com.todoapp.app.restcontroller;
 
+import com.todoapp.app.custom_exceptions.InvalidPageNumberException;
+import com.todoapp.app.custom_exceptions.NotFoundException;
 import com.todoapp.app.entity.Task;
 import com.todoapp.app.entity.User;
-import com.todoapp.app.exceptions.NotFoundException;
 import com.todoapp.app.repository.Task_Repository;
 import com.todoapp.app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.CollectionModel;
@@ -18,14 +20,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 
+
 import java.util.ArrayList;
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-import javax.transaction.Transactional;
 
 @Transactional
 @RestController
@@ -45,11 +48,17 @@ public class TaskResource extends RepresentationModel {
     {
         Optional<User> userOptional = userRepository.findById(id);
 
-        if (userOptional.isEmpty())
-        {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+        if(!userOptional.isPresent()){
+
+            ///////////////////////////////////////////////////////////////////////////////
+            throw new NotFoundException(  "User Not Found" , HttpStatus.NOT_FOUND.value() );
         }
 
+        //System.out.println(page_number);
+        if( page_number < 0 ){
+            //System.out.println("here");
+            throw new InvalidPageNumberException( "Page number cannot be negative" );
+        }
         User user = userOptional.get();
 
         //Resources <user > resources = new Resources < > (collection);
@@ -57,7 +66,8 @@ public class TaskResource extends RepresentationModel {
         //Getting page number through parameter and getting fixed size results
         Pageable firstPage = PageRequest.of(page_number, page_limit);
 
-        List<Task> taskList;
+        Page<Task> taskList;
+        List<Task> next_page;
 
         //by default show both type of tasks of a user
         if(isCompleted == -1) {
@@ -74,8 +84,8 @@ public class TaskResource extends RepresentationModel {
 
 
         List<EntityModel<Task>> taskEntityModel = new ArrayList<>();
-
-        for(Task task : taskList)
+        List<Task> all_tasks = taskList.getContent();
+        for(Task task : all_tasks)
         {
             EntityModel<Task> entityModel = EntityModel.of(task);
             Link link = linkTo(methodOn(TaskResource.class).getTasks(id,task.getTid())).withSelfRel();
@@ -87,13 +97,26 @@ public class TaskResource extends RepresentationModel {
         CollectionModel collectionModel = CollectionModel.of(taskEntityModel);
         //EntityModel listEntityModel = EntityModel.of(taskEntityModel);
         // /users/{id}/tasks
-        Link nextPage = linkTo(methodOn(TaskResource.class).getAllTasks(id,page_number + 1,isCompleted)).withRel("Next Page");
-        Link prevPage = linkTo(methodOn(TaskResource.class).getAllTasks(id,page_number - 1,isCompleted)).withRel("Previous Page");
 
-        collectionModel.add(nextPage);
-        collectionModel.add(prevPage);
+        //System.out.println( "------------------------------------------------------------- " + taskList.getTotalElements() +" hey "+ ( page_number + 1 ) * 3 );
+
+        if( taskList.getTotalElements() > ( page_number + 1 ) * page_limit ) {
+
+            Link nextPage = linkTo(methodOn(TaskResource.class).getAllTasks(id, page_number + 1, isCompleted)).withRel("Next Page");
+            collectionModel.add(nextPage);
+        }
+        else{
+
+            //throw new InvalidPageNumberException( "Invalid Page number" );
+        }
+
+        if( page_number > 0 ) {
+            Link prevPage = linkTo(methodOn(TaskResource.class).getAllTasks(id, page_number - 1, isCompleted)).withRel("Previous Page");
+            collectionModel.add(prevPage);
+        }
 
         return collectionModel;
+
     }
 
 
@@ -102,14 +125,22 @@ public class TaskResource extends RepresentationModel {
     public EntityModel<Task> getTasks(@PathVariable int id, @PathVariable int tid)
     {
         Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isEmpty())
-        {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+
+        if(!userOptional.isPresent()){
+
+            ///////////////////////////////////////////////////////////////////////////////
+            throw new NotFoundException(  "User Not Found" , HttpStatus.NOT_FOUND.value() );
         }
         User user = userOptional.get();
         //ask_repository.
         Task task = task_repository.findByTidAndUser(tid, user);
         //Task task = task_repository.findByTidAndUser_Uid(tid, id);
+
+        if( task == null ){
+
+            throw new NotFoundException(  "Task Not Found" , HttpStatus.NOT_FOUND.value() );
+        }
+
         EntityModel<Task> taskEntityModel = EntityModel.of(task);
 
         Link link = linkTo(methodOn(TaskResource.class).getTasks(id,tid)).withSelfRel();
@@ -140,11 +171,10 @@ public class TaskResource extends RepresentationModel {
 
             Task task = task_repository.findByTidAndUser(tid, user);
 
-            if(task == null)
-            {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task Not Found");
+            if( task == null ){
+
+                throw new NotFoundException(  "Task Not Found" , HttpStatus.NOT_FOUND.value() );
             }
-            //System.out.println("Task is "+task);
 
             task.setTaskStatus(partialUpdate.getTaskStatus());
             task_repository.save(task);
@@ -156,10 +186,12 @@ public class TaskResource extends RepresentationModel {
     @PostMapping( "/users/{id}/tasks" )
     public void add_task(@PathVariable int id , @RequestBody Task task ){
         Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isEmpty())
-        {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+
+        if (!userOptional.isPresent()) {
+            /////////////////////////////////////////////////////////////////////////////////
+            throw new NotFoundException( "User Not Found" , HttpStatus.NOT_FOUND.value() );
         }
+
         User user = userOptional.get();
         task.setUser(user);
         task_repository.save(task);
@@ -169,11 +201,21 @@ public class TaskResource extends RepresentationModel {
     @DeleteMapping( "/users/{user_id}/tasks/{task_id}" )
     public void delete_task( @PathVariable int user_id , @PathVariable int task_id ){
         Optional<User> userOptional = userRepository.findById( user_id );
-        if (userOptional.isEmpty())
-        {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+
+        if (!userOptional.isPresent()) {
+            /////////////////////////////////////////////////////////////////////////////////
+            throw new NotFoundException( "User Not Found" , HttpStatus.NOT_FOUND.value() );
+        }
+
+        Optional< Task > taskOptional = task_repository.findById( task_id );
+
+        if(!taskOptional.isPresent()){
+
+            throw new NotFoundException(  "Task Not Found" , HttpStatus.NOT_FOUND.value() );
         }
         User user = userOptional.get();
+
+
         task_repository.deleteByTidAndUser( task_id , user );
     }
 
@@ -182,14 +224,20 @@ public class TaskResource extends RepresentationModel {
     public void update_task( @PathVariable int user_id , @PathVariable int task_id , @RequestBody Task task ){
 
         Optional<User> userOptional = userRepository.findById( user_id );
-        if (userOptional.isEmpty())
-        {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
+
+        if (!userOptional.isPresent()) {
+            throw new NotFoundException( "User Not Found" , HttpStatus.NOT_FOUND.value() );
         }
+
         User user = userOptional.get();
 
-        //Task old_details = getTasks( user_id , task_id );
+
         Task old_details = task_repository.findByTidAndUser(task_id,user);
+
+        if( old_details == null ){
+            throw new NotFoundException(  "Task Not Found" , HttpStatus.NOT_FOUND.value() );
+        }
+
         task.setTid( old_details.getTid() );
         task.setUser( old_details.getUser() );
         task.setTask_creation_date( old_details.getTask_creation_date() );
